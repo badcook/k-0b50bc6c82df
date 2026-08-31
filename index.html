@@ -2378,6 +2378,14 @@ function schedulePush(){
   pushTimer=setTimeout(function(){pushTimer=null;pushSharedState();},2500);
 }
 function deviceName(){return String(syncConfig.deviceName||'').trim()||'a device';}
+function pantryRowsForSync(){
+  return String(pantry||'').split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean).map(function(line){
+    const p=parseIngredientLine(line)||{};
+    const name=p.name||line;
+    const amount=p.quantityValue!=null?(formatNumber(p.quantityValue)+(p.unit?' '+p.unit:'')):(p.quantityText||'');
+    return {raw:line,name:name,key:p.key||normalizeIngredientName(name),amount:amount,group:ingredientGroupForName(name)};
+  });
+}
 function buildStatePayload(){
   const at=function(key){return stateMeta[key]||'';};
   return {
@@ -2386,7 +2394,7 @@ function buildStatePayload(){
     standardPlan:{json:{ids:generatedIds,sunday:sundayHistory},updatedAt:at('standardPlan')},
     groceryTicks:{json:groceryTicks,updatedAt:at('groceryTicks')},
     groceryNotes:{json:groceryNotes,updatedAt:at('groceryNotes')},
-    pantry:{json:pantry,updatedAt:at('pantry')},
+    pantry:{json:{text:pantry,rows:pantryRowsForSync()},updatedAt:at('pantry')},
     takeawayDay:{json:takeawayDay,updatedAt:at('takeawayDay')}
   };
 }
@@ -2425,7 +2433,11 @@ function adoptRemoteKey(key,entry){
   }
   if(key==='groceryTicks'&&entry.json&&typeof entry.json==='object'&&!Array.isArray(entry.json)){groceryTicks=entry.json;writeStored('groceryTicks',groceryTicks);}
   if(key==='groceryNotes'&&typeof entry.json==='string'){groceryNotes=entry.json;writeStored('groceryNotes',groceryNotes);}
-  if(key==='pantry'&&typeof entry.json==='string'){pantry=entry.json;writeStored('pantry',pantry);}
+  if(key==='pantry'){
+    const j=entry.json;
+    const text=typeof j==='string'?j:(j&&typeof j==='object'&&typeof j.text==='string'?j.text:null);
+    if(text!==null){pantry=text;writeStored('pantry',pantry);}
+  }
   if(key==='takeawayDay'&&typeof entry.json==='string'&&['mon','tue','wed','thu','fri','sat','sun'].indexOf(entry.json)>-1){takeawayDay=entry.json;writeStored('takeawayDay',takeawayDay);}
 }
 function mergeRemoteRecipes(entry){
