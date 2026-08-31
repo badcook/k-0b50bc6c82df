@@ -1,0 +1,13 @@
+{
+  "name": "The No-Cook Kitchen",
+  "short_name": "No-Cook",
+  "description": "Meal ideas, a shared planner and a shared shopping list for the Sakura rice cooker and Halo+ fryer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E6E9E1",
+  "theme_color": "#E6E9E1",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
