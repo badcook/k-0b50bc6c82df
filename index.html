@@ -60,6 +60,22 @@ h1 .thin{font-weight:500;display:block;letter-spacing:-.02em}
 .search{font-family:var(--mono);font-size:12px;padding:8px 11px;border:1px solid var(--ink);
   background:var(--card);color:var(--ink);border-radius:2px;min-width:180px;flex:1;max-width:260px}
 .search::placeholder{color:var(--ink2);letter-spacing:.06em}
+.filters-toggle{display:none}
+@media (max-width:700px){
+  .lcd-shell{padding-top:8px}
+  .lcd{padding:8px 11px;gap:10px;font-size:11px}
+  .controls{flex-wrap:nowrap;overflow-x:auto;padding:7px 0 9px;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .controls::-webkit-scrollbar{display:none}
+  .controls .chip,.controls .flabel{flex:none}
+  .controls .search{min-width:150px;max-width:none;flex:none}
+  .lcd-shell.collapsed .controls{display:none}
+  .lcd-shell.collapsed .filters-toggle{display:flex;gap:6px;padding:7px 0 9px;border-bottom:1px solid var(--rule);background:var(--panel)}
+  .lcd-shell.collapsed.open .controls{display:flex}
+  .lcd-shell.collapsed.open .filters-toggle{border-bottom:0;padding-bottom:0}
+  .filters-toggle .chip{flex:1;text-align:left}
+  .filters-toggle #filtersTop{flex:none}
+  .filters-toggle #filterSummary{opacity:.75;text-transform:none;letter-spacing:.04em}
+}
 :focus-visible{outline:3px solid var(--amber);outline-offset:2px}
 section{padding:52px 0 8px;border-top:1px solid var(--rule)}
 .sec-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
@@ -378,6 +394,10 @@ h3.igcat{scroll-margin-top:150px}
       <button class="chip" data-f2="med" aria-pressed="false">Med &amp; Middle East</button>
       <button class="chip" data-f2="lat" aria-pressed="false">Latin American</button>
       <button class="chip" data-f2="eur" aria-pressed="false">European &amp; British</button>
+    </div>
+    <div class="filters-toggle">
+      <button class="chip" id="filtersToggle" type="button" aria-expanded="false">Filters <span id="filterSummary"></span> ▾</button>
+      <button class="chip" id="filtersTop" type="button">Top</button>
     </div>
   </div>
 </div>
@@ -3071,6 +3091,31 @@ host.addEventListener('click',function(ev){const button=ev.target.closest('[data
 document.getElementById('recipeLibrary').addEventListener('click',function(){renderRecipeLibrary();});
 document.getElementById('sharedList').addEventListener('click',function(){openSyncSettings();});
 updateSavedRecipeUI();updateSyncUI();
+(function(){
+  const shell=document.querySelector('.lcd-shell'),toggle=document.getElementById('filtersToggle'),top=document.getElementById('filtersTop'),summary=document.getElementById('filterSummary');
+  if(!shell||!toggle)return;
+  const mq=window.matchMedia?window.matchMedia('(max-width:700px)'):null;
+  let opened=false,openedAt=0,ticking=false;
+  function label(sel,allText){const b=document.querySelector(sel+'[aria-pressed="true"]');const t=b?b.textContent.trim():'';return t&&t!==allText?t:'';}
+  function update(){
+    ticking=false;
+    const y=window.scrollY||0,mobile=mq?mq.matches:false;
+    if(!mobile||y<140){shell.classList.remove('collapsed','open');opened=false;toggle.setAttribute('aria-expanded','false');return;}
+    shell.classList.add('collapsed');
+    if(opened&&Math.abs(y-openedAt)>420)opened=false;
+    shell.classList.toggle('open',opened);toggle.setAttribute('aria-expanded',opened?'true':'false');
+    const parts=[label('[data-f1]','All machines'),label('[data-f2]','All cuisines')].filter(Boolean);
+    const q=(document.getElementById('search')||{}).value||'';
+    if(q.trim())parts.push('“'+q.trim()+'”');
+    if(summary)summary.textContent=parts.length?'· '+parts.join(' · '):'';
+  }
+  toggle.addEventListener('click',function(){opened=!opened;openedAt=window.scrollY||0;update();});
+  if(top)top.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+  window.addEventListener('scroll',function(){if(!ticking){ticking=true;(window.requestAnimationFrame||setTimeout)(update);}},{passive:true});
+  window.addEventListener('resize',update);
+  shell.addEventListener('click',function(ev){if(ev.target.closest('.chip')&&!ev.target.closest('.filters-toggle'))setTimeout(update,0);});
+  update();
+})();
 if(window.__NCK_SERVED__&&looksLikeHttpUrl(window.__NCK_SERVED__.execUrl)&&!syncConfig.webAppUrl){
   syncConfig.webAppUrl=window.__NCK_SERVED__.execUrl;persistSyncConfig();updateSyncUI();
 }
